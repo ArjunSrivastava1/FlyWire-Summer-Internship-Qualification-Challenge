@@ -93,8 +93,6 @@ Forbidden edges:
   c→a ✗
 ```
 
-Implemented as 6 map lookups per triple.
-
 ### Algorithm 4: Cross-Dataset Isomorphism Search
 
 For a candidate triple `(a,b,c)` in MANC:
@@ -128,34 +126,17 @@ Since MANC ∩ BANC = 2 and MANC ∩ MCNS = 0, we cannot use same-ID matching. I
 | Weak connectivity check | Satisfy June 8 req | Single component verification |
 | Induced subgraph strictness | No extra edges | Enforces isomorphism |
 
-### Pseudocode (Full Pipeline)
-
-```
-function findLargestCommonCircuit(MANC, BANC, MCNS):
-    best = null
-    for each neuron a in MANC:
-        for each neuron b in MANC.outNeighbors(a):
-            for each neuron c in MANC.outNeighbors(b):
-                if not hasExtraEdges(MANC, a, b, c):
-                    signature = getSignature(MANC, a, b, c)
-                    for each (x,y,z) in BANC with matching degree:
-                        if getSignature(BANC, x, y, z) == signature:
-                            for each (p,q,r) in MCNS with matching degree:
-                                if getSignature(MCNS, p, q, r) == signature:
-                                    best = (a,b,c,x,y,z,p,q,r)
-                                    return best  // early exit
-    return best
-```
-
+---
 ### Alternative Approaches Considered (and Why Rejected)
 
 | Approach | Why Rejected |
 |----------|---------------|
-| Same-ID matching (MANC∩MAOL) | MAOL had extra edge (25840→13849) breaking isomorphism |
-| Exhaustive 4-node search | Computationally prohibitive (O(N⁴) on 23k nodes) |
-| Graph neural networks | Overkill for N=3; would require embedding training |
-| MAOL inclusion | Extra edges violated induced subgraph condition |
+| Same-ID matching | Same IDs that were present in one group, broke isomorphism in others |
+| Exhaustive n-node searching | Required expensive operations for pattern matching on the datasets |
+| Graph neural networks | would require embedding training |
+| Other inclusions | Extra edges violated induced subgraph condition |
 
+The alternative approaches were rejected due to either violating the rules of induced subgraphs, isomorphism, or being computationally expensive, while a higher n could have been aimed for, it would have required analysis of further complex structures that looped back on themselves(manc has 3 n=4 chains in which node 2 and node 4 are same)
 ---
 
 ## Assumptions Master Table
@@ -164,7 +145,7 @@ function findLargestCommonCircuit(MANC, BANC, MCNS):
 |---|------------|-----------|------------------|
 | 1 | Edge weights (synapse counts) ignored | Per problem statement | No impact on topology |
 | 2 | Different IDs across datasets ≠ same neuron | IDs are reconstruction-specific | Isomorphism required |
-| 3 | Weak connectivity required | Per June 8 clarification | Our circuit satisfies (A-B-C chain) |
+| 3 | Weak connectivity required | Per June 8 clarification | circuit satisfies (A-B-C chain) |
 | 4 | Self-loops excluded | Not present in edge lists | No impact |
 | 5 | Neurotransmitter predictions from Codex used as given | No experimental validation available | May contain false positives |
 | 6 | Induced subgraph = no extra edges among matched neurons | Standard graph theory definition | Strictly enforced |
@@ -173,3 +154,6 @@ function findLargestCommonCircuit(MANC, BANC, MCNS):
 ---
 
 ## Technical Steps to Reproduce:
+The attached code is a folder that contains 3 modules of go code, 1 is to obtain stats over the datasets provided, the other 2 are for finding structures that are connected in a dataset, and the last is to verify the obtained structures for verifications(extra edges, loops etc etc)
+
+As the approach itself required human lookups for metadata, the code is kept to a minimum, further, the files are easily modified to check for structures in other datasets, as such, finding and verification files are added for only 1 dataset, and produce one line results that are easy to understand, parse and are obtained within ~5 secs.
