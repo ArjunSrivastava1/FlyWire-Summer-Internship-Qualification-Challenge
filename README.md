@@ -8,55 +8,30 @@ The circuit is weakly connected, satisfies the induced subgraph condition (no ex
 
 ---
 
-## Master Table: Datasets Overview
-
-| Dataset | Full Name | Sex | Region Covered | Nodes | Edges | File Size |
-|---------|-----------|-----|----------------|-------|-------|-----------|
-| MANC | Male Adult Nerve Cord | Male | Nerve cord only | 23,641 | 5.3M | ~100MB |
-| BANC | Brain and Nerve Cord | Female | Brain + nerve cord | 112,885 | 2.7M | ~100MB |
-| MCNS | Male Central Nervous System | Male | Brain + nerve cord | 165,820 | 6.2M | ~100MB |
-| MAOL | (not used) | - | - | 51,669 | 6.5M | ~100MB |
-| FAFB | (not used) | - | - | 138,584 | 3.7M | ~100MB |
-
-*MAOL and FAFB were excluded due to extra edges violating isomorphism or lack of overlap.*
-
----
-
-## Node Overlap Analysis
-
-| Pair | Overlap Size | Implication |
-|------|--------------|-------------|
-| MANC ∩ MAOL | 5,293 | Significant overlap: candidate for same-ID matching |
-| MANC ∩ BANC | 2 | Negligible: requires isomorphism (structural matching) |
-| MANC ∩ MCNS | 0 | No ID overlap: requires isomorphism |
-| BANC ∩ MCNS | Not computed | Not needed for final circuit |
-
-**Strategy decision:** Use isomorphism (structural matching), since only MANC∩MAOL had significant overlap in terms of matching IDs, so a start step was obtained with a naive and greedy approach that focused on iteration and verification; compare and obtain a working sample,shift to next best candidate on the basis of overlap present, MAOL was dropped due to extra edges during verification for this very reason as its structures had extra edges and loops.
-
----
-
 ## Technical Strategy & Heuristics
 
-### Language Choice: Go
+the technical strategy for such a task, of analysis of a csv dataset which has repetitive data in it is based on a very simple factor, how much of it can be automated? and what is needed?
+for research work, there are many ai tools that exist now, and many that i have worked on myself( as a oss contributor to huggingface) such as google notebook that allows one to perform dataset q&a with gemini, or ml-intern: which is ml software that in and of itself is capable of reading papers and shipping models
 
-| Language | Parse Time (5 files) | Reason |
-|----------|---------------------|--------|
-| Python | ~9 minutes | Pandas overhead, memory heavy |
-| Go | **11 seconds** | Compiled, efficient maps, zero GC tuning |
+building up on my experience of scala during my extra courses i took, provided distributed systems programming and functional thinking, manipulating files and then filtering via dataframes is the easiest way to look for combined matching ids, or chain motifs is the easiest portion
 
-Go's `map[[2]string]bool` enabled fast adjacency checks with tuple keys.
+however, given that the csv files only consisted of the nueron ids and nothing more, relying on the AI framework alone would have not yielded qualitative results, yes, there are many capabilities to them, yet human verification is an important component of all workflows, and for reading through the neurons and what they did? or interpretation of results? that was something an ai could not have been relied upon(such as the figures and the meshes, vision models cant parse through those yet and get confused), the standard benchmarks for this are well known and such structures only add overhead expenses that are best avoided, along with unnecessary data, so usage of ai is best limited to only parsing the found results
+
+so the technical strategy came down to this:find the connections(graphs) and then filter those for the needed number of N, followed further by looking in the other datasets until the same structure was found across 3 different datasets
+
+and reference with the human(researcher/programmer) as to the interpretation and what each structure did biologically along with lookups and further metadata analysis on the codex provided, which contained vital information as the neuron ids are just numbers
 
 ### Search Heuristic (Step-by-Step)
 
-1. **Anchor on smallest dataset** — MANC (23,641 nodes) to minimize search space
-2. **Enumerate directed 3-node chains** — `A → B → C`
-3. **Filter by degree sequence** — prune candidates where in/out degrees don't match across datasets
-4. **Verify induced subgraph condition in MANC**:
-   - `A → B` exists ✓
-   - `B → C` exists ✓
-   - No edges: `B → A`, `C → B`, `A → C`, `C → A` ✓
-5. **Search BANC and MCNS for identical adjacency matrix**
-6. **Export matched triple** to `network.csv`
+1. Anchor on smallest dataset — MANC (23,641 nodes) to minimize search space
+2. Enumerate directed 3-node chains `A → B → C`
+3. Filter by degree sequence prune candidates where in/out degrees don't match across datasets
+4. Verify induced subgraph condition in MANC:
+   - `A → B` exists 
+   - `B → C` exists 
+   - No edges: `B → A`, `C → B`, `A → C`, `C → A` 
+5. Search BANC and MCNS for identical adjacency matrix
+6. Export matched structure to `network.csv`
 
 ### Why This Works
 
@@ -141,31 +116,6 @@ Since MANC ∩ BANC = 2 and MANC ∩ MCNS = 0, we cannot use same-ID matching. I
 - **Search BANC and MCNS separately** for isomorphic patterns
 - **No cross-dataset ID assumptions**
 
-### Heuristic: One-to-Many Divergence Detection
-
-For BANC, we noticed the same `(A,B)` core matched multiple `C` neurons. We added a check:
-
-```go
-for each (a,b) in BANC {
-    targets := all c where (a,b,c) satisfies induced condition
-    if len(targets) > 1 {
-        record divergence
-    }
-}
-```
-
-This revealed the **command hub** property unique to BANC.
-
-### Why Not Use Existing Graph Isomorphism Libraries?
-
-| Library | Why Not Used |
-|---------|--------------|
-| NetworkX (Python) | Too slow on 100M+ edges |
-| igraph (R/Python) | Overhead for N=3 search |
-| nauty/Traces | Requires compilation, overkill for N=3 |
-| VF2 | General algorithm but slower than our degree-filtered brute force |
-
-**Our approach:** Specialized for N=3, optimized with degree pruning, runs in <11 seconds.
 
 ### Summary of Heuristics
 
@@ -197,20 +147,6 @@ function findLargestCommonCircuit(MANC, BANC, MCNS):
     return best
 ```
 
-### Performance Summary
-
-| Step | Time |
-|------|------|
-| Load 5 edge lists (Go) | 11 sec |
-| Build adjacency maps | <1 sec |
-| Degree sequence precomputation | <1 sec |
-| 3-node chain enumeration (MANC) | <2 sec |
-| BANC isomorphism search | 2.3 sec |
-| MCNS isomorphism search | 3.5 sec |
-| **Total** | **~11 sec** |
-
-*Python equivalent estimated at 9+ minutes.*
-
 ### Alternative Approaches Considered (and Why Rejected)
 
 | Approach | Why Rejected |
@@ -235,3 +171,5 @@ function findLargestCommonCircuit(MANC, BANC, MCNS):
 | 7 | Directed edges only (unweighted) | Per problem statement | Ignored synapse counts |
 
 ---
+
+## Technical Steps to Reproduce:
