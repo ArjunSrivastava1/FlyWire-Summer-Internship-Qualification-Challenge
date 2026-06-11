@@ -1,6 +1,26 @@
 This md presents a deeper dive for results produced and obtained during the research period
 
 
+## Master Table: Datasets Overview
+
+| Dataset | Full Name                   | Sex    | Region Covered           | Nodes   | Edges | File Size |
+| ------- | --------------------------- | ------ | ------------------------ | ------- | ----- | --------- |
+| MANC    | Male Adult Nerve Cord       | Male   | Nerve cord only          | 23,641  | 5.3M  | ~100MB    |
+| BANC    | Brain and Nerve Cord        | Female | Brain + nerve cord       | 112,885 | 2.7M  | ~100MB    |
+| MCNS    | Male Central Nervous System | Male   | Brain + nerve cord       | 165,820 | 6.2M  | ~100MB    |
+| MAOL    | Male Adult Optic Lobe       | Male   | Optic Lobe/Visual System | 51,669  | 6.5M  | ~100MB    |
+| FAFB    | Female Adult Fly Brain      | Female | Brain                    | 138,584 | 3.7M  | ~100MB    |
+
+---
+
+## Node Overlap Analysis
+
+| Pair | Overlap Size | Implication |
+|------|--------------|-------------|
+| MANC ∩ MAOL | 5,293 | Significant overlap: candidate for same-ID matching |
+| MANC ∩ BANC | 2 | Negligible: requires isomorphism (structural matching) |
+| MANC ∩ MCNS | 0 | No ID overlap: requires isomorphism |
+
 ## Comparison Table: Circuit Across Three Datasets
 
 | Feature | MANC | BANC | MCNS |
@@ -63,6 +83,29 @@ This satisfies the weak connectivity requirement. Verified by checking that the 
 | **Total verification time** | **~11 seconds** |
 
 *Python equivalent would take ~9 minutes just to load all the given 5 datasets.*
+Python, to load 1 dataset alone(BANC) produced took the following times:
+
+'took 1m42s' 
+
+As compared to go:
+
+banc_626_edge_list.csv: 2676592 edges, 112885 nodes (1.31s)
+fafb_783_edge_list.csv: 3732460 edges, 138584 nodes (1.97s)
+manc_1.2.1_edge_list.csv: 5305638 edges, 23641 nodes (1.69s)
+maol_1.1_edge_list.csv: 6484936 edges, 51669 nodes (2.27s)
+mcns_0.9_edge_list.csv: 6239112 edges, 165820 nodes (3.54s)
+
+'took 18s'
+A vast speed up that allowed for iteration, prototyping within the provided time constraint
+
+### About Existing Libraries?
+
+| Library | Why Not Used |
+|---------|--------------|
+| NetworkX (Python) | Too slow on 100M+ edges |
+| igraph (R/Python) | Overhead |
+| nauty/Traces | Requires compilation|
+| VF2 | General algorithm but slower than our degree-filtered brute force |
 
 ---
 
