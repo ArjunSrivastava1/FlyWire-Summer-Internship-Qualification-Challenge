@@ -101,6 +101,7 @@ Forbidden edges:
 | Other inclusions | Extra edges violated induced subgraph condition |
 
 The alternative approaches were rejected due to either violating the rules of induced subgraphs, isomorphism, or being computationally expensive, while a higher n could have been aimed for, it would have required analysis of further complex structures that looped back on themselves(manc has 3 n=4 chains in which node 2 and node 4 are same)
+
 ---
 
 ## Assumptions Master Table
