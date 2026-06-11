@@ -131,7 +131,8 @@ cd FlyWire-Summer-Internship-Qualification-Challenge
 
 Run the provided codes within, you can even extend the given codes to change the csv files, or add further nodes easily
 ```
-go run src/stats.go 
-go run src/find_banc.go   # verifies the matched triple
+go run src/stats.go //obtain stats for the datasets
+go run src/find_banc.go   //finds the defined motif or graphs
+go run src/verify_induced.go //verifies each edge of the found or induced subgraph
 ```
 Have fun!!
