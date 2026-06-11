@@ -10,16 +10,16 @@ The circuit is weakly connected, satisfies the induced subgraph condition (no ex
 
 ## Technical Strategy & Heuristics
 
-the technical strategy for such a task, of analysis of a csv dataset which has repetitive data in it is based on a very simple factor, how much of it can be automated? and what is needed?
-for research work, there are many ai tools that exist now, and many that i have worked on myself( as a oss contributor to huggingface) such as google notebook that allows one to perform dataset q&a with gemini, or ml-intern: which is ml software that in and of itself is capable of reading papers and shipping models
+The technical strategy for such a task, of analysis of a csv dataset which has repetitive data in it is based on a very simple factor, how much of it can be automated? and what is needed?
+For research work, there are many AI tools that exist now, and many that I have worked on myself( as a oss contributor to huggingface) such as google notebook that allows one to perform dataset Q&A with gemini, or ml-intern: which is ml software that in and of itself is capable of reading papers and shipping models
 
-building up on my experience of scala during my extra courses i took, provided distributed systems programming and functional thinking, manipulating files and then filtering via dataframes is the easiest way to look for combined matching ids, or chain motifs is the easiest portion
+Building up on my experience of scala, providing distributed systems programming and functional programmatic thinking paradigms: manipulating files and then filtering via dataframes is the easiest way to look for combined matching ids, or chain motifs is the easiest portion
 
-however, given that the csv files only consisted of the nueron ids and nothing more, relying on the AI framework alone would have not yielded qualitative results, yes, there are many capabilities to them, yet human verification is an important component of all workflows, and for reading through the neurons and what they did? or interpretation of results? that was something an ai could not have been relied upon(such as the figures and the meshes, vision models cant parse through those yet and get confused), the standard benchmarks for this are well known and such structures only add overhead expenses that are best avoided, along with unnecessary data, so usage of ai is best limited to only parsing the found results
+However, given that the csv files only consisted of the Neuron IDs and nothing more, relying on the AI framework alone would have not yielded qualitative results, yes, there are many capabilities to them, yet human verification is an important component of all workflows, and for reading through the neurons and what they did? or interpretation of results? that was something an ai could not have been relied upon(such as the figures and the meshes, vision models cant parse through those yet and get confused), the standard benchmarks for this are well known and such structures only add overhead expenses that are best avoided, along with unnecessary data, so usage of AI is best limited to only parsing the found results
 
-so the technical strategy came down to this:find the connections(graphs) and then filter those for the needed number of N, followed further by looking in the other datasets until the same structure was found across 3 different datasets
+So the technical strategy came down to this:find the connections(graphs) and then filter those for the needed number of N, followed further by looking in the other datasets until the same structure was found across 3 different datasets
 
-and reference with the human(researcher/programmer) as to the interpretation and what each structure did biologically along with lookups and further metadata analysis on the codex provided, which contained vital information as the neuron ids are just numbers
+And reference with the human(researcher/programmer) as to the interpretation and what each structure did biologically along with lookups and further metadata analysis on the codex provided, which contained vital information as the neuron ids are just numbers
 
 ### Search Heuristic (Step-by-Step)
 
@@ -46,20 +46,7 @@ and reference with the human(researcher/programmer) as to the interpretation and
 - **Adjacency map:** `map[[2]string]bool` O(1) edge existence checks
 - **Outgoing neighbors index:** `map[string][]string` O(1) lookup of all targets from a source
 
-### Algorithm 1: Degree Sequence Filtering (Pruning Heuristic)
-
-Before checking isomorphism, we filter candidate nodes by their **in-degree and out-degree** across datasets:
-
-```go
-// Only consider nodes with matching degree profiles
-if inDegreeMANC[a] == inDegreeBANC[x] && outDegreeMANC[a] == outDegreeBANC[x] {
-    // Candidate match
-}
-```
-
-**Why this works:** Isomorphic nodes must have identical in/out degrees. This prunes ~99% of false candidates.
-
-### Algorithm 2: 3-Node Chain Enumeration (Brute Force with Early Exit)
+### Algorithm 1: 3-Node Chain Enumeration (Brute Force with Early Exit)
 
 ```go
 for a := range nodes {
@@ -74,10 +61,11 @@ for a := range nodes {
 }
 ```
 
-**Complexity:** O(N × d²) where d = average degree (~224 in MANC).  
-**Actual runtime:** <2 seconds on 23,641 nodes.
+Complexity: O(N × d²) where d = average degree (~224 in MANC).  
+Actual runtime: <2 seconds on 23,641 nodes.
 
-### Algorithm 3: Induced Subgraph Verification
+### Algorithm 2: Pattern Search: 
+For a given hardcoded pattern (a,b,c), the script exhaustively searches BANC for any triple (x,y,z) with x→y and y→z and no extra edges
 
 For a triple `(a,b,c)`, verify:
 
@@ -93,37 +81,13 @@ Forbidden edges:
   c→a ✗
 ```
 
-### Algorithm 4: Cross-Dataset Isomorphism Search
-
-For a candidate triple `(a,b,c)` in MANC:
-
-1. Compute its **adjacency signature** (bitmask of 6 possible directed edges)
-2. For each triple `(x,y,z)` in BANC with matching degree sequence:
-   - Compare adjacency signature
-   - If match → candidate found
-3. Repeat for MCNS
-
-**Signature example:** `a→b` = bit 0, `a→c` = bit 1, `b→a` = bit 2, `b→c` = bit 3, `c→a` = bit 4, `c→b` = bit 5.  
-Chain `a→b, b→c` = binary `001001` = decimal 9.
-
-### Optimization: Early Pruning by Overlap
-
-Since MANC ∩ BANC = 2 and MANC ∩ MCNS = 0, we cannot use same-ID matching. Instead:
-
-- **Anchor in MANC** (smallest dataset)
-- **Search BANC and MCNS separately** for isomorphic patterns
-- **No cross-dataset ID assumptions**
-
-
 ### Summary of Heuristics
 
 | Heuristic | Purpose | Impact |
 |-----------|---------|--------|
-| Degree sequence filtering | Prune false candidates | 99% reduction |
 | Anchor on smallest dataset | Minimize search space | 23k vs 165k nodes |
-| Adjacency signature (bitmask) | Fast isomorphism check | O(1) comparison |
 | One-to-many divergence detection | Identify command hubs | Unique BANC finding |
-| Weak connectivity check | Satisfy June 8 req | Single component verification |
+| Weak connectivity check | Satisfy new req | Single component verification |
 | Induced subgraph strictness | No extra edges | Enforces isomorphism |
 
 ---
@@ -157,3 +121,16 @@ The alternative approaches were rejected due to either violating the rules of in
 The attached code is a folder that contains 3 modules of go code, 1 is to obtain stats over the datasets provided, the other 2 are for finding structures that are connected in a dataset, and the last is to verify the obtained structures for verifications(extra edges, loops etc etc)
 
 As the approach itself required human lookups for metadata, the code is kept to a minimum, further, the files are easily modified to check for structures in other datasets, as such, finding and verification files are added for only 1 dataset, and produce one line results that are easy to understand, parse and are obtained within ~5 secs.
+
+As for steps, clone the repo:
+```bash
+git clone https://github.com/ArjunSrivastava1/FlyWire-Summer-Internship-Qualification-Challenge
+cd FlyWire-Summer-Internship-Qualification-Challenge
+```
+
+Run the provided codes within, you can even extend the given codes to change the csv files, or add further nodes easily
+```
+go run src/stats.go 
+go run src/find_banc.go   # verifies the matched triple
+```
+Have fun!!
