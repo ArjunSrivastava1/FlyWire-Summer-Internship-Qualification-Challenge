@@ -136,3 +136,5 @@ go run src/find_banc.go   //finds the defined motif or graphs
 go run src/verify_induced.go //verifies each edge of the found or induced subgraph
 ```
 Have fun!!
+
+<img src="assets_flywire/logo 1.png" width="75" height="75" alt="Logo"> <img src="assets_flywire/logo 2.png" width="200" height="100" alt="Logo"> 
